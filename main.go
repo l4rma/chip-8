@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -14,6 +13,8 @@ func main() {
 	if err != nil {
 		log.Panicf("Error opening file: %s", err)
 	}
+	chip8.LoadBytes(0x50, interpreter.FontSet)
 	chip8.LoadRom(game)
-	fmt.Printf("Chip8: %v", chip8)
+	chip8.PrintMemory(0x50)
+	chip8.PrintMemory(0x9F)
 }
