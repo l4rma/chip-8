@@ -152,6 +152,7 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 	case 0x5000: // 5xy0 - SE Vx, Vy
 		// 	Skip next instruction if Vx = Vy.
 		// The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
+		// TODO: add default throwing an error if any of the last 4 bits are high
 		x := (op & 0x0F00) >> 8
 		y := (op & 0x00F0) >> 4
 
@@ -198,7 +199,7 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			// the result in Vx. A bitwise OR compares the corrseponding bits
 			// from two values, and if either bit is 1, then the same bit in
 			// the result is also 1. Otherwise, it is 0.
-			c.V[x] = c.V[x] | c.V[y]
+			c.V[x] |= c.V[y]
 
 			c.PC += 2
 			break
@@ -208,11 +209,39 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			// the result in Vx. A bitwise AND compares the corrseponding bits
 			// from two values, and if both bits are 1, then the same bit in
 			// the result is also 1. Otherwise, it is 0.
-			c.V[x] = c.V[x] & c.V[y]
+			c.V[x] &= c.V[y]
 
 			c.PC += 2
 			break
+		case 0x0003: // 8xy3 - XOR Vx, Vy
+			// Set Vx = Vx XOR Vy.
+			// Performs a bitwise exclusive OR on the values of Vx and Vy, then
+			// stores the result in Vx. An exclusive OR compares the
+			// corrseponding bits from two values, and if the bits are not both
+			// the same, then the corresponding bit in the result is set to 1.
+			// Otherwise, it is 0.
+			c.V[x] ^= c.V[y]
+
+			c.PC += 2
+			break
+		case 0x0004: // 8xy4 - ADD Vx, Vy
+			// Set Vx = Vx + Vy, set VF = carry.
+			// The values of Vx and Vy are added together. If the result is
+			// greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0.
+			// Only the lowest 8 bits of the result are kept, and stored in Vx.
+			sum := uint16(c.V[x]) + uint16(c.V[y])
+
+			c.V[x] += c.V[y]
+
+			if sum > 0xFF {
+				c.V[0xF] = 0x01
+			} else {
+				c.V[0xF] = 0x00
+			}
+			c.PC += 2
+			break
 		}
+
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
