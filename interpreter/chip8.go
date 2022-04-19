@@ -19,7 +19,10 @@ type chip8 struct {
 }
 
 func NewChip8() chip8 {
-	return chip8{PC: 0x200}
+	return chip8{
+		PC: 0x200,
+		SP: 0,
+	}
 }
 
 func (c *chip8) LoadRom(data io.Reader) (int, error) {
@@ -46,32 +49,64 @@ func (c *chip8) clearDisplay() {
 }
 
 func (c *chip8) Init() error {
+	// TODO: Implement function
 	return nil
 }
+
+func (c *chip8) Run() error {
+	err := c.Init()
+	if err != nil {
+		return err
+	}
+
+	for {
+		err := c.Step()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *chip8) Step() error {
+	opcode := c.FetchInstruction()
+	_, err := c.ExecuteOpcode(opcode)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *chip8) FetchInstruction() uint16 {
 	opCode := uint16(c.memory[c.PC])<<8 | uint16(c.memory[c.PC+1])
 	//c.PC += 2 // TODO: Deside to inc PC here or in each opcode execution
 	return opCode
 }
 
-func (c *chip8) ExecuteOpcode(op uint16) error {
+func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 	switch op & 0xF000 {
 	case 0x0000:
 		switch op {
 		// 00E0 - CLS
 		case 0x00E0:
+			// Clear the display
 			c.clearDisplay()
 			c.PC += 2
 			break
+		// 00EE - RET
 		case 0x00EE:
-			// TODO
+			// The interpreter sets the program counter to the address at the
+			// top of the stack, then subtracts 1 from the stack pointer.
+			c.PC = c.stack[c.SP]
+			c.SP--
 			break
 		default:
-			return fmt.Errorf("Unknown opcode: 0x%04X", op)
+			return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 		}
 	default:
-		return fmt.Errorf("Unknown opcode: 0x%04X", op)
+		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
 
-	return nil
+	return op, nil
 }

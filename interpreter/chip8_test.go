@@ -51,9 +51,8 @@ func TestFetchInstruction(t *testing.T) {
 	chip8.LoadBytes(0x200, testBytes)
 
 	got := chip8.FetchInstruction()
-	expected := uint16(0x4269)
 
-	assert.Equal(t, got, expected)
+	assert.Equal(t, uint16(0x4269), got)
 }
 
 func TestExecuteInstructionCLS(t *testing.T) {
@@ -62,9 +61,25 @@ func TestExecuteInstructionCLS(t *testing.T) {
 	chip8.LoadBytes(0x200, testBytes)
 
 	opcode := chip8.FetchInstruction()
-	err := chip8.ExecuteOpcode(opcode)
+	_, err := chip8.ExecuteOpcode(opcode)
 	if err != nil {
 		t.Errorf("Error: %s", err)
 	}
+
 	assert.Equal(t, uint16(0x202), chip8.PC)
+}
+
+func TestExecuteInstructionRET(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x00, 0xE0, 0x00, 0xEE, 0x42, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+
+	// Manually set stack
+	chip8.stack[0] = uint16(0x666)
+	chip8.stack[1] = uint16(0x222)
+	chip8.SP = 1
+
+	chip8.Run()
+
+	assert.Equal(t, uint16(0x222), chip8.PC)
 }
