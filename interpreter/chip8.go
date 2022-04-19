@@ -171,6 +171,15 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		c.V[x] = kk
 
 		c.PC += 2
+	case 0x7000: // 7xkk - ADD Vx, byte
+		// Set Vx = Vx + kk.
+		// Adds the value kk to the value of register Vx, then stores the result in Vx.
+		kk := byte(op)
+		x := (op & 0x0F00) >> 8
+
+		c.V[x] += kk
+
+		c.PC += 2
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}

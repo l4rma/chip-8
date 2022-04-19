@@ -163,3 +163,16 @@ func TestLoadVx6xkk(t *testing.T) {
 
 	assert.Equal(t, uint8(0x69), chip8.V[2])
 }
+
+func TestADD7xkk(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x72, 0x39}
+	chip8.LoadBytes(0x200, testBytes)
+
+	chip8.V[2] = 0x30
+	assert.NotEqual(t, uint8(0x69), chip8.V[2])
+
+	chip8.Run()
+
+	assert.Equal(t, uint8(0x69), chip8.V[2])
+}
