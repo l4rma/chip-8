@@ -139,3 +139,18 @@ func TestSkipInstruction4xkk(t *testing.T) {
 	assert.Equal(t, uint16(0x204), chip8.PC)
 	assert.Equal(t, uint16(0x0069), currentOp)
 }
+
+func TestSkipInstruction5xy0(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x52, 0x40, 0x00, 0x00, 0x00, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x42
+	chip8.V[4] = 0x42
+
+	chip8.Run()
+
+	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
+
+	assert.Equal(t, uint16(0x204), chip8.PC)
+	assert.Equal(t, uint16(0x0069), currentOp)
+}

@@ -149,6 +149,19 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			break
 		}
 		break
+	case 0x5000: // 5xy0 - SE Vx, Vy
+		// 	Skip next instruction if Vx = Vy.
+		// The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
+		x := (op & 0x0F00) >> 8
+		y := (op & 0x00F0) >> 4
+
+		c.PC += 2
+
+		if c.V[x] == c.V[y] {
+			c.PC += 2
+			break
+		}
+		break
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
