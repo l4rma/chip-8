@@ -204,3 +204,17 @@ func TestOrVxVy8xy1(t *testing.T) {
 
 	assert.Equal(t, uint8(0x69), chip8.V[2])
 }
+
+func TestANDVxVy8xy2(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x82, 0x32}
+	chip8.LoadBytes(0x200, testBytes)
+
+	chip8.V[2] = 0xFF
+	chip8.V[3] = 0x69
+	assert.NotEqual(t, uint8(0x69), chip8.V[2])
+
+	chip8.Run()
+
+	assert.Equal(t, uint8(0x69), chip8.V[2])
+}

@@ -192,13 +192,23 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			c.V[x] = c.V[y]
 			c.PC += 2
 			break
-		case 0x0001:
+		case 0x0001: // 8xy1 - OR Vx, Vy
 			// Set Vx = Vx OR Vy.
 			// Performs a bitwise OR on the values of Vx and Vy, then stores
 			// the result in Vx. A bitwise OR compares the corrseponding bits
 			// from two values, and if either bit is 1, then the same bit in
 			// the result is also 1. Otherwise, it is 0.
 			c.V[x] = c.V[x] | c.V[y]
+
+			c.PC += 2
+			break
+		case 0x0002: // 8xy2 - AND Vx, Vy
+			// Set Vx = Vx AND Vy.
+			// Performs a bitwise AND on the values of Vx and Vy, then stores
+			// the result in Vx. A bitwise AND compares the corrseponding bits
+			// from two values, and if both bits are 1, then the same bit in
+			// the result is also 1. Otherwise, it is 0.
+			c.V[x] = c.V[x] & c.V[y]
 
 			c.PC += 2
 			break
