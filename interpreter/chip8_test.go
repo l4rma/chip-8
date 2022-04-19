@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadRom(t *testing.T) {
@@ -16,13 +18,13 @@ func TestLoadRom(t *testing.T) {
 	got := chip8.memory[0x200]
 	expected := 0
 	if got != byte(expected) {
-		t.Errorf("Expected: 0x%x, Got: 0x%x", expected, got)
+		t.Errorf("Expected: 0x%02X, Got: 0x%02X", expected, got)
 	}
 	chip8.LoadRom(game)
 	got = chip8.memory[0x200]
 	notExpected := 0
 	if got == byte(notExpected) {
-		t.Errorf("Expected NOT to be: 0x%x, Got: 0x%x", notExpected, got)
+		t.Errorf("Expected NOT to be: 0x%02X, Got: 0x%02X", notExpected, got)
 	}
 }
 
@@ -34,11 +36,35 @@ func TestLoadBytes(t *testing.T) {
 	got := chip8.memory[0x3]
 	expected := 0x42
 	if got != byte(expected) {
-		t.Errorf("Expected: 0x%x, Got: 0x%x", expected, got)
+		t.Errorf("Expected: 0x%02X, Got: 0x%02X", expected, got)
 	}
 	got = chip8.memory[0x4]
 	expected = 0x69
 	if got != byte(expected) {
-		t.Errorf("Expected: 0x%x, Got: 0x%x", expected, got)
+		t.Errorf("Expected: 0x%02X, Got: 0x%02X", expected, got)
 	}
+}
+
+func TestFetchInstruction(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x42, 0x69, 0x68, 0x67}
+	chip8.LoadBytes(0x200, testBytes)
+
+	got := chip8.FetchInstruction()
+	expected := uint16(0x4269)
+
+	assert.Equal(t, got, expected)
+}
+
+func TestExecuteInstructionCLS(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x00, 0xE0, 0x42, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+
+	opcode := chip8.FetchInstruction()
+	err := chip8.ExecuteOpcode(opcode)
+	if err != nil {
+		t.Errorf("Error: %s", err)
+	}
+	assert.Equal(t, uint16(0x202), chip8.PC)
 }
