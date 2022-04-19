@@ -162,6 +162,15 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			break
 		}
 		break
+	case 0x6000: // 6xkk - LD Vx, byte
+		// Set Vx = kk.
+		// The interpreter puts the value kk into register Vx.
+		kk := byte(op)
+		x := (op & 0x0F00) >> 8
+
+		c.V[x] = kk
+
+		c.PC += 2
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
