@@ -65,8 +65,6 @@ func (c *chip8) Run() error {
 			return err
 		}
 	}
-
-	return nil
 }
 
 func (c *chip8) Step() error {
@@ -78,6 +76,13 @@ func (c *chip8) Step() error {
 	return nil
 }
 
+func (c *chip8) Push(addr uint16) error {
+	c.SP++
+	c.stack[c.SP] = addr
+
+	return nil
+}
+
 func (c *chip8) FetchInstruction() uint16 {
 	opCode := uint16(c.memory[c.PC])<<8 | uint16(c.memory[c.PC+1])
 	//c.PC += 2 // TODO: Deside to inc PC here or in each opcode execution
@@ -86,6 +91,7 @@ func (c *chip8) FetchInstruction() uint16 {
 
 func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 	switch op & 0xF000 {
+	// 0nnn
 	case 0x0000:
 		switch op {
 		// 00E0 - CLS
@@ -100,10 +106,21 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			// top of the stack, then subtracts 1 from the stack pointer.
 			c.PC = c.stack[c.SP]
 			c.SP--
+			c.PC += 2
 			break
 		default:
 			return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 		}
+	// 1nnn - JMP addr
+	case 0x1000:
+		// Jump to location nnn.
+		// The interpreter sets the program counter to nnn.
+		c.PC = op & 0x0FFF
+		break
+	case 0x2000:
+		c.Push(c.PC)
+		c.PC = op & 0x0FFF
+		break
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}

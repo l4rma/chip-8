@@ -79,7 +79,39 @@ func TestExecuteInstructionRET(t *testing.T) {
 	chip8.stack[1] = uint16(0x222)
 	chip8.SP = 1
 
-	chip8.Run()
+	err := chip8.Run()
+	if err != nil {
+		t.Errorf("Error: %s", err)
+	}
 
 	assert.Equal(t, uint16(0x222), chip8.PC)
+}
+
+func TestExecuteInstructionJMP(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x12, 0x04, 0x00, 0x00, 0x42, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+
+	chip8.Run()
+
+	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
+
+	assert.Equal(t, uint16(0x204), chip8.PC)
+	assert.Equal(t, uint16(0x4269), currentOp)
+}
+
+func TestExecuteInstructionCAL(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x22, 0x04, 0x00, 0x00, 0x42, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+
+	assert.Equal(t, uint8(0x00), chip8.SP)
+	chip8.Run()
+
+	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
+
+	assert.Equal(t, uint8(0x01), chip8.SP)
+	assert.Equal(t, uint16(0x200), chip8.stack[chip8.SP])
+	assert.Equal(t, uint16(0x204), chip8.PC)
+	assert.Equal(t, uint16(0x4269), currentOp)
 }
