@@ -171,6 +171,7 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		c.V[x] = kk
 
 		c.PC += 2
+		break
 	case 0x7000: // 7xkk - ADD Vx, byte
 		// Set Vx = Vx + kk.
 		// Adds the value kk to the value of register Vx, then stores the result in Vx.
@@ -180,6 +181,28 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		c.V[x] += kk
 
 		c.PC += 2
+		break
+	case 0x8000: // 8xyn
+		x := (op & 0x0F00) >> 8
+		y := (op & 0x00F0) >> 4
+		switch op & 0x000F {
+		case 0x0000: // 8xy0 - LD Vx, Vy
+			// Set Vx = Vy.
+			// Stores the value of register Vy in register Vx.
+			c.V[x] = c.V[y]
+			c.PC += 2
+			break
+		case 0x0001:
+			// Set Vx = Vx OR Vy.
+			// Performs a bitwise OR on the values of Vx and Vy, then stores
+			// the result in Vx. A bitwise OR compares the corrseponding bits
+			// from two values, and if either bit is 1, then the same bit in
+			// the result is also 1. Otherwise, it is 0.
+			c.V[x] = c.V[x] | c.V[y]
+
+			c.PC += 2
+			break
+		}
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
