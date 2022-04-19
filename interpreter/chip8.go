@@ -93,12 +93,12 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 	switch op & 0xF000 {
 	case 0x0000: // 0nnn
 		switch op {
-		case 0x00E0:
+		case 0x00E0: // CLS
 			// Clear the display
 			c.clearDisplay()
 			c.PC += 2
 			break
-		case 0x00EE:
+		case 0x00EE: // RET
 			// Return from a subroutine.
 			// The interpreter sets the program counter to the address at the
 			// top of the stack, then subtracts 1 from the stack pointer.
@@ -109,19 +109,19 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		default:
 			return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 		}
-	case 0x1000: // 1nnn
+	case 0x1000: // 1nnn - JP addr
 		// Jump to location nnn.
 		// The interpreter sets the program counter to nnn.
 		c.PC = op & 0x0FFF
 		break
-	case 0x2000: // 2nnn
+	case 0x2000: // 2nnn - CALL addr
 		// Call subroutine at nnn.
 		// The interpreter increments the stack pointer, then puts the current
 		// PC on the top of the stack. The PC is then set to nnn.
 		c.Push(c.PC)
 		c.PC = op & 0x0FFF
 		break
-	case 0x3000: //3xkk
+	case 0x3000: //3xkk - SE Vx, byte
 		// Skip next instruction if Vx = kk.
 		// The interpreter compares register Vx to kk, and if they are equal,
 		// increments the program counter by 2.
@@ -131,6 +131,20 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		c.PC += 2
 
 		if kk == c.V[x] {
+			c.PC += 2
+			break
+		}
+		break
+	case 0x4000: // 4xkk - SNE Vx, byte
+		// Skip next instruction if Vx != kk.
+		// The interpreter compares register Vx to kk, and if they are not
+		// equal, increments the program counter by 2.
+		kk := byte(op)
+		x := (op & 0x0F00) >> 8
+
+		c.PC += 2
+
+		if kk != c.V[x] {
 			c.PC += 2
 			break
 		}

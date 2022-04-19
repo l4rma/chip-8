@@ -58,7 +58,7 @@ func TestFetchInstruction(t *testing.T) {
 
 func TestCLS(t *testing.T) {
 	chip8 := NewChip8()
-	testBytes := []byte{0x00, 0xE0, 0x42, 0x69}
+	testBytes := []byte{0x00, 0xE0, 0x00, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
 
 	opcode := chip8.FetchInstruction()
@@ -72,7 +72,7 @@ func TestCLS(t *testing.T) {
 
 func TestRET(t *testing.T) {
 	chip8 := NewChip8()
-	testBytes := []byte{0x00, 0xE0, 0x00, 0xEE, 0x42, 0x69}
+	testBytes := []byte{0x00, 0xE0, 0x00, 0xEE, 0x00, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
 
 	// Manually set stack
@@ -80,17 +80,14 @@ func TestRET(t *testing.T) {
 	chip8.stack[1] = uint16(0x222)
 	chip8.SP = 1
 
-	err := chip8.Run()
-	if err != nil {
-		t.Errorf("Error: %s", err)
-	}
+	chip8.Run()
 
-	assert.Equal(t, uint16(0x222), chip8.PC)
+	assert.Equal(t, uint16(0x224), chip8.PC)
 }
 
 func TestJMP(t *testing.T) {
 	chip8 := NewChip8()
-	testBytes := []byte{0x12, 0x04, 0x00, 0x00, 0x42, 0x69}
+	testBytes := []byte{0x12, 0x04, 0x00, 0x00, 0x00, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
 
 	chip8.Run()
@@ -98,12 +95,12 @@ func TestJMP(t *testing.T) {
 	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
 
 	assert.Equal(t, uint16(0x204), chip8.PC)
-	assert.Equal(t, uint16(0x4269), currentOp)
+	assert.Equal(t, uint16(0x0069), currentOp)
 }
 
 func TestCAL(t *testing.T) {
 	chip8 := NewChip8()
-	testBytes := []byte{0x22, 0x04, 0x00, 0x00, 0x42, 0x69}
+	testBytes := []byte{0x22, 0x04, 0x00, 0x00, 0x00, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
 
 	assert.Equal(t, uint8(0x00), chip8.SP)
@@ -114,12 +111,12 @@ func TestCAL(t *testing.T) {
 	assert.Equal(t, uint8(0x01), chip8.SP)
 	assert.Equal(t, uint16(0x200), chip8.stack[chip8.SP])
 	assert.Equal(t, uint16(0x204), chip8.PC)
-	assert.Equal(t, uint16(0x4269), currentOp)
+	assert.Equal(t, uint16(0x0069), currentOp)
 }
 
-func TestSkipInstruction(t *testing.T) {
+func TestSkipInstruction3xkk(t *testing.T) {
 	chip8 := NewChip8()
-	testBytes := []byte{0x32, 0x69, 0x00, 0x00, 0x42, 0x69}
+	testBytes := []byte{0x32, 0x69, 0x00, 0x00, 0x00, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
 	chip8.V[2] = 0x69
 	chip8.Run()
@@ -127,5 +124,18 @@ func TestSkipInstruction(t *testing.T) {
 	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
 
 	assert.Equal(t, uint16(0x204), chip8.PC)
-	assert.Equal(t, uint16(0x4269), currentOp)
+	assert.Equal(t, uint16(0x0069), currentOp)
+}
+
+func TestSkipInstruction4xkk(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x42, 0x69, 0x00, 0x00, 0x00, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x42
+	chip8.Run()
+
+	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
+
+	assert.Equal(t, uint16(0x204), chip8.PC)
+	assert.Equal(t, uint16(0x0069), currentOp)
 }
