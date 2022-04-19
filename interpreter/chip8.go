@@ -91,17 +91,15 @@ func (c *chip8) FetchInstruction() uint16 {
 
 func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 	switch op & 0xF000 {
-	// 0nnn
-	case 0x0000:
+	case 0x0000: // 0nnn
 		switch op {
-		// 00E0 - CLS
 		case 0x00E0:
 			// Clear the display
 			c.clearDisplay()
 			c.PC += 2
 			break
-		// 00EE - RET
 		case 0x00EE:
+			// Return from a subroutine.
 			// The interpreter sets the program counter to the address at the
 			// top of the stack, then subtracts 1 from the stack pointer.
 			c.PC = c.stack[c.SP]
@@ -111,15 +109,31 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		default:
 			return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 		}
-	// 1nnn - JMP addr
-	case 0x1000:
+	case 0x1000: // 1nnn
 		// Jump to location nnn.
 		// The interpreter sets the program counter to nnn.
 		c.PC = op & 0x0FFF
 		break
-	case 0x2000:
+	case 0x2000: // 2nnn
+		// Call subroutine at nnn.
+		// The interpreter increments the stack pointer, then puts the current
+		// PC on the top of the stack. The PC is then set to nnn.
 		c.Push(c.PC)
 		c.PC = op & 0x0FFF
+		break
+	case 0x3000: //3xkk
+		// Skip next instruction if Vx = kk.
+		// The interpreter compares register Vx to kk, and if they are equal,
+		// increments the program counter by 2.
+		kk := byte(op)
+		x := (op & 0x0F00) >> 8
+
+		c.PC += 2
+
+		if kk == c.V[x] {
+			c.PC += 2
+			break
+		}
 		break
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)

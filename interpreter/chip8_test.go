@@ -45,6 +45,7 @@ func TestLoadBytes(t *testing.T) {
 	}
 }
 
+/*** INSTRUCTION TESTS ***/
 func TestFetchInstruction(t *testing.T) {
 	chip8 := NewChip8()
 	testBytes := []byte{0x42, 0x69, 0x68, 0x67}
@@ -55,7 +56,7 @@ func TestFetchInstruction(t *testing.T) {
 	assert.Equal(t, uint16(0x4269), got)
 }
 
-func TestExecuteInstructionCLS(t *testing.T) {
+func TestCLS(t *testing.T) {
 	chip8 := NewChip8()
 	testBytes := []byte{0x00, 0xE0, 0x42, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
@@ -69,7 +70,7 @@ func TestExecuteInstructionCLS(t *testing.T) {
 	assert.Equal(t, uint16(0x202), chip8.PC)
 }
 
-func TestExecuteInstructionRET(t *testing.T) {
+func TestRET(t *testing.T) {
 	chip8 := NewChip8()
 	testBytes := []byte{0x00, 0xE0, 0x00, 0xEE, 0x42, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
@@ -87,7 +88,7 @@ func TestExecuteInstructionRET(t *testing.T) {
 	assert.Equal(t, uint16(0x222), chip8.PC)
 }
 
-func TestExecuteInstructionJMP(t *testing.T) {
+func TestJMP(t *testing.T) {
 	chip8 := NewChip8()
 	testBytes := []byte{0x12, 0x04, 0x00, 0x00, 0x42, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
@@ -100,7 +101,7 @@ func TestExecuteInstructionJMP(t *testing.T) {
 	assert.Equal(t, uint16(0x4269), currentOp)
 }
 
-func TestExecuteInstructionCAL(t *testing.T) {
+func TestCAL(t *testing.T) {
 	chip8 := NewChip8()
 	testBytes := []byte{0x22, 0x04, 0x00, 0x00, 0x42, 0x69}
 	chip8.LoadBytes(0x200, testBytes)
@@ -112,6 +113,19 @@ func TestExecuteInstructionCAL(t *testing.T) {
 
 	assert.Equal(t, uint8(0x01), chip8.SP)
 	assert.Equal(t, uint16(0x200), chip8.stack[chip8.SP])
+	assert.Equal(t, uint16(0x204), chip8.PC)
+	assert.Equal(t, uint16(0x4269), currentOp)
+}
+
+func TestSkipInstruction(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x32, 0x69, 0x00, 0x00, 0x42, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x69
+	chip8.Run()
+
+	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
+
 	assert.Equal(t, uint16(0x204), chip8.PC)
 	assert.Equal(t, uint16(0x4269), currentOp)
 }
