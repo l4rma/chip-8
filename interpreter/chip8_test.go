@@ -315,3 +315,24 @@ func TestSNEVxVy9xy0(t *testing.T) {
 
 	assert.Equal(t, uint16(0x0069), currentOp)
 }
+
+func TestLoadIAnnn(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0xA6, 0x66}
+	chip8.LoadBytes(0x200, testBytes)
+
+	chip8.Run()
+
+	assert.Equal(t, uint16(0x0666), chip8.I)
+}
+
+func TestJumpV0nnnBnnn(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0xB6, 0x00}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[0] = 0x66
+
+	chip8.Run()
+
+	assert.Equal(t, uint16(0x0666), chip8.PC)
+}

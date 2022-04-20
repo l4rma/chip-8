@@ -307,6 +307,17 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 
 		c.PC += 2
 		break
+	case 0xA000: // Annn - LD I, addr
+		// Set I = nnn.
+		// The value of register I is set to nnn.
+		c.I = op & 0x0FFF
+		c.PC += 2
+		break
+	case 0xB000: //Bnnn - JP V0, addr
+		// Jump to location nnn + V0.
+		// The program counter is set to nnn plus the value of V0.
+		c.PC = (op & 0x0FFF) + uint16(c.V[0])
+		break
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
