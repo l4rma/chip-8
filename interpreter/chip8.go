@@ -280,7 +280,33 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 
 			c.PC += 2
 			break
+		case 0x000E: // 8xyE - SHL Vx {, Vy}
+			// Set Vx = Vx SHL 1.
+			// If the most-significant bit of Vx is 1, then VF is set to 1,
+			// otherwise to 0. Then Vx is multiplied by 2.
+			if (c.V[x] & 0x80) == 0x80 {
+				c.V[0xF] = 0x01
+			} else {
+				c.V[0xF] = 0x00
+			}
+			c.V[x] = c.V[x] << 1
+
+			c.PC += 2
+			break
 		}
+	case 0x9000: // 9xy0 - SNE Vx, Vy
+		// Skip next instruction if Vx != Vy.
+		// The values of Vx and Vy are compared, and if they are not equal, the
+		// program counter is increased by 2.
+		x := (op & 0x0F00) >> 8
+		y := (op & 0x00F0) >> 4
+
+		if c.V[x] != c.V[y] {
+			c.PC += 2
+		}
+
+		c.PC += 2
+		break
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}

@@ -287,3 +287,31 @@ func TestSUBNVxVy8xy7(t *testing.T) {
 	assert.Equal(t, uint8(0x01), chip8.V[0xF])
 	assert.Equal(t, uint8(0x69), chip8.V[2])
 }
+
+func TestSHLVxVy8xyE(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x82, 0x3E}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x92
+	chip8.V[3] = 0x99
+	assert.Equal(t, uint8(0x00), chip8.V[0xF])
+
+	chip8.Run()
+
+	assert.Equal(t, uint8(0x01), chip8.V[0xF])
+	assert.Equal(t, uint8(0x24), chip8.V[2])
+}
+
+func TestSNEVxVy9xy0(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x92, 0x30, 0x00, 0x00, 0x00, 0x69}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x42
+	chip8.V[3] = 0x69
+
+	chip8.Run()
+
+	currentOp := uint16(chip8.memory[chip8.PC])<<8 | uint16(chip8.memory[chip8.PC+1])
+
+	assert.Equal(t, uint16(0x0069), currentOp)
+}
