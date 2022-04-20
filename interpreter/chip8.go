@@ -240,8 +240,47 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			}
 			c.PC += 2
 			break
-		}
+		case 0x0005: // 8xy5 - SUB Vx, Vy
+			// Set Vx = Vx - Vy, set VF = NOT borrow.
+			// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is
+			// subtracted from Vx, and the results stored in Vx.
+			if c.V[x] > c.V[y] {
+				c.V[0xF] = 0x01
+			} else {
+				c.V[0xF] = 0x00
+			}
+			c.V[x] -= c.V[y]
 
+			c.PC += 2
+			break
+		case 0x0006: // 8xy6 - SHR Vx {, Vy}
+			// Set Vx = Vx SHR 1.
+			// If the least-significant bit of Vx is 1, then VF is set to 1,
+			// otherwise 0. Then Vx is divided by 2.
+			if (c.V[x] & 0x1) == 0x01 {
+				c.V[0xF] = 0x01
+			} else {
+				c.V[0xF] = 0x00
+			}
+			c.V[x] /= 2
+			// c.V[x] = c.V[x] >> 1
+
+			c.PC += 2
+			break
+		case 0x0007: // 8xy7 - SUBN Vx, Vy
+			// Set Vx = Vy - Vx, set VF = NOT borrow.
+			// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is
+			// subtracted from Vy, and the results stored in Vx.
+			if c.V[y] > c.V[x] {
+				c.V[0xF] = 0x01
+			} else {
+				c.V[0xF] = 0x00
+			}
+			c.V[x] = c.V[y] - c.V[x]
+
+			c.PC += 2
+			break
+		}
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}

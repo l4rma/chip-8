@@ -242,5 +242,48 @@ func TestADDVxVy8xy4(t *testing.T) {
 
 	chip8.Run()
 
+	assert.Equal(t, uint8(0x21), chip8.V[0x2])
 	assert.Equal(t, uint8(0x01), chip8.V[0xF])
+}
+
+// TODO: Må dobbeltsjekke utregningen
+func TestSUBVxVy8xy5(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x82, 0x35}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x99
+	chip8.V[3] = 0x88
+	assert.NotEqual(t, uint8(0x01), chip8.V[0xF])
+
+	chip8.Run()
+
+	assert.Equal(t, uint8(0x01), chip8.V[0xF])
+}
+
+func TestSHRVxVy8xy6(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x82, 0x36}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x66
+	assert.Equal(t, uint8(0x00), chip8.V[0xF])
+
+	chip8.Run()
+
+	assert.Equal(t, uint8(0x00), chip8.V[0xF])
+	assert.Equal(t, uint8(0x33), chip8.V[2])
+}
+
+func TestSUBNVxVy8xy7(t *testing.T) {
+	chip8 := NewChip8()
+	testBytes := []byte{0x82, 0x37}
+	chip8.LoadBytes(0x200, testBytes)
+	chip8.V[2] = 0x30
+	chip8.V[3] = 0x99
+	assert.Equal(t, uint8(0x00), chip8.V[0xF])
+	assert.Equal(t, uint8(0x30), chip8.V[2])
+
+	chip8.Run()
+
+	assert.Equal(t, uint8(0x01), chip8.V[0xF])
+	assert.Equal(t, uint8(0x69), chip8.V[2])
 }
