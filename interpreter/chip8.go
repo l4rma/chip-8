@@ -7,14 +7,20 @@ import (
 	"math/rand"
 )
 
+var (
+	GraphicsWidth  uint16 = 0
+	GraphicsHeight uint16 = 0
+)
+
 type chip8 struct {
-	memory     [0x1000]byte  // 4096 bytes internal memory
-	V          [0x10]byte    // 16 8-bit virtual registers (V0-VF)
-	I          uint16        // Address register
-	PC         uint16        // Program Counter (starts at 0x200)
-	SP         byte          // Stack Pointer
-	stack      [0x10]uint16  // 16 cells of reserved memory
-	display    [64 * 32]bool // 64x32 pixel display
+	memory     [0x1000]byte // 4096 bytes internal memory
+	V          [0x10]byte   // 16 8-bit virtual registers (V0-VF)
+	I          uint16       // Address register
+	PC         uint16       // Program Counter (starts at 0x200)
+	SP         byte         // Stack Pointer
+	stack      [0x10]uint16 // 16 cells of reserved memory
+	display    [64][32]byte // 64x32 pixel display
+	keypad     [16]byte     // Keypad with 16 keys
 	delayTimer byte
 	soundTimer byte
 }
@@ -45,7 +51,16 @@ func (c *chip8) PrintMemory(index int) {
 
 func (c *chip8) clearDisplay() {
 	for i := range c.display {
-		c.display[i] = false
+		for j := range c.display[i] {
+			c.display[i][j] = 0
+		}
+	}
+}
+
+func (c *chip8) loadKeys() {
+	var i uint8
+	for i = 0; i < 16; i++ {
+		c.keypad[i] = 0x00
 	}
 }
 
@@ -332,7 +347,8 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		c.PC += 2
 		break
 	case 0xD000: // Dxyn - DRW Vx, Vy, nibble
-		// Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+		// Display n-byte sprite starting at memory location I at (Vx, Vy), set
+		// VF = collision.
 		// The interpreter reads n bytes from memory, starting at the address
 		// stored in I. These bytes are then displayed as sprites on screen at
 		// coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If
@@ -343,9 +359,78 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		x := (op & 0x0F00) >> 8
 		y := (op & 0x00F0) >> 4
 		n := (op & 0x000F)
+		c.V[0xF] = 0
+		j := uint16(0)
+		i := uint16(0)
 
-		fmt.Printf("%v %v %v", x, y, n)
+		for j = 0; j < n; j++ {
+			pixel := c.memory[c.I+j]
+			for i = 0; i < 8; i++ {
+				if (pixel & (0x80 >> i)) != 0 {
+					if c.display[(c.V[y] + uint8(j))][c.V[x]+uint8(i)] == 1 {
+						c.V[0xF] = 1
+					}
+					c.display[(c.V[y] + uint8(j))][c.V[x]+uint8(i)] ^= 1
+				}
+			}
+		}
+		c.PC += 2
 		break
+	case 0xE000:
+		x := (op & 0x0F00) >> 8
+		switch op & 0x00FF {
+		case 0x9E: // Ex9E - SKP Vx
+			// Skip next instruction if key with the value of Vx is pressed.
+			// Checks the keyboard, and if the key corresponding to the value of Vx
+			// is currently in the down position, PC is increased by 2.
+			if c.keypad[c.V[x]] == 1 {
+				c.PC += 2
+			}
+			c.PC += 2
+			break
+		case 0xA1: // ExA1 - SKNP Vx
+			// Skip next instruction if key with the value of Vx is not pressed.
+			// Checks the keyboard, and if the key corresponding to the value of Vx
+			// is currently in the up position, PC is increased by 2.
+			if c.keypad[c.V[x]] == 0 {
+				c.PC += 2
+			}
+			c.PC += 2
+			break
+		default:
+			return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
+		}
+	// Fx0A - LD Vx, K
+	// Wait for a key press, store the value of the key in Vx.
+	// All execution stops until a key is pressed, then the value of that
+	// key is stored in Vx.
+	// Fx15 - LD DT, Vx
+	// Set delay timer = Vx.
+	// DT is set equal to the value of Vx.
+	// Fx18 - LD ST, Vx
+	// Set sound timer = Vx.
+	// ST is set equal to the value of Vx.
+	// Fx1E - ADD I, Vx
+	// Set I = I + Vx.
+	// The values of I and Vx are added, and the results are stored in I.
+	// Fx29 - LD F, Vx
+	// Set I = location of sprite for digit Vx.
+	// The value of I is set to the location for the hexadecimal sprite
+	// corresponding to the value of Vx. See section 2.4, Display, for more
+	// information on the Chip-8 hexadecimal font.
+	// Fx33 - LD B, Vx
+	// Store BCD representation of Vx in memory locations I, I+1, and I+2.
+	// The interpreter takes the decimal value of Vx, and places the
+	// hundreds digit in memory at location in I, the tens digit at location
+	// I+1, and the ones digit at location I+2.
+	// Fx55 - LD [I], Vx
+	// Store registers V0 through Vx in memory starting at location I.
+	// The interpreter copies the values of registers V0 through Vx into
+	// memory, starting at the address in I.
+	// Fx65 - LD Vx, [I]
+	// Read registers V0 through Vx from memory starting at location I.
+	// The interpreter reads values from memory starting at location I into
+	// registers V0 through Vx.
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 	}
