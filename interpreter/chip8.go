@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/rand"
 )
 
 type chip8 struct {
@@ -313,10 +314,37 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		c.I = op & 0x0FFF
 		c.PC += 2
 		break
-	case 0xB000: //Bnnn - JP V0, addr
+	case 0xB000: // Bnnn - JP V0, addr
 		// Jump to location nnn + V0.
 		// The program counter is set to nnn plus the value of V0.
 		c.PC = (op & 0x0FFF) + uint16(c.V[0])
+		break
+	case 0xC000: // Cxkk - RND Vx, byte
+		// Set Vx = random byte AND kk.
+		// The interpreter generates a random number from 0 to 255, which is
+		// then ANDed with the value kk. The results are stored in Vx.
+		x := (op & 0x0F00) >> 8
+		kk := byte(op)
+		rnd := byte(rand.Intn(256))
+
+		c.V[x] = rnd & kk
+
+		c.PC += 2
+		break
+	case 0xD000: // Dxyn - DRW Vx, Vy, nibble
+		// Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+		// The interpreter reads n bytes from memory, starting at the address
+		// stored in I. These bytes are then displayed as sprites on screen at
+		// coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If
+		// this causes any pixels to be erased, VF is set to 1, otherwise it is
+		// set to 0. If the sprite is positioned so part of it is outside the
+		// coordinates of the display, it wraps around to the opposite side of
+		// the screen.
+		x := (op & 0x0F00) >> 8
+		y := (op & 0x00F0) >> 4
+		n := (op & 0x000F)
+
+		fmt.Printf("%v %v %v", x, y, n)
 		break
 	default:
 		return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
