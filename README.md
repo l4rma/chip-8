@@ -5,7 +5,7 @@ An attempt to make a CHIP-8 interpreter in Golang.
 ### Progress
 * [x] Load bytes into memory
 * [x] Write instructions (Create tests for all instructions)
-* [ ] "Clock" (set to 60 Hz)
+* [x] "Clock" (set to 60 Hz)
 * [ ] Display graphics (SDL2?)
 * [ ] Sound
 * [ ] ...

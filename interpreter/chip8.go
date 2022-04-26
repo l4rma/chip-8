@@ -6,11 +6,13 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"time"
 )
 
 var (
 	GraphicsWidth  uint16 = 0
 	GraphicsHeight uint16 = 0
+	ClockSpeed            = time.Duration(60) // 60Hz
 )
 
 type chip8 struct {
@@ -91,6 +93,7 @@ func (c *chip8) Run() error {
 		if err != nil {
 			return err
 		}
+		time.Sleep(time.Second / ClockSpeed)
 	}
 }
 
@@ -118,7 +121,7 @@ func (c *chip8) FetchInstruction() uint16 {
 }
 
 func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
-	log.Printf("Executing %04X", op)
+	log.Printf("%04X", op)
 	switch op & 0xF000 {
 	case 0x0000: // 0nnn
 		switch op {
@@ -408,7 +411,6 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			// Skip next instruction if key with the value of Vx is not pressed.
 			// Checks the keyboard, and if the key corresponding to the value of Vx
 			// is currently in the up position, PC is increased by 2.
-			log.Printf("V[%d]: %02X", x, c.V[x])
 			if c.keypad[c.V[x]] == 0 {
 				c.PC += 2
 			}
