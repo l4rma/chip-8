@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 )
 
@@ -13,14 +14,14 @@ var (
 )
 
 type chip8 struct {
-	memory     [0x1000]byte // 4096 bytes internal memory
-	V          [0x10]byte   // 16 8-bit virtual registers (V0-VF)
-	I          uint16       // Address register
-	PC         uint16       // Program Counter (starts at 0x200)
-	SP         byte         // Stack Pointer
-	stack      [0x10]uint16 // 16 cells of reserved memory
-	display    [64][32]byte // 64x32 pixel display
-	keypad     [16]byte     // Keypad with 16 keys
+	memory     [0x1000]byte         // 4096 bytes internal memory
+	V          [0x10]byte           // 16 8-bit virtual registers (V0-VF)
+	I          uint16               // Address register
+	PC         uint16               // Program Counter (starts at 0x200)
+	SP         byte                 // Stack Pointer
+	stack      [0x10]uint16         // 16 cells of reserved memory
+	display    [64 * 2][32 * 2]byte // 64x32 pixel display
+	keypad     [16]byte             // Keypad with 16 keys
 	delayTimer byte
 	soundTimer byte
 }
@@ -47,6 +48,16 @@ func (c *chip8) LoadBytes(o int, b []byte) (int, error) {
 
 func (c *chip8) PrintMemory(index int) {
 	fmt.Printf("CHIP-8 Memory[%d]: 0x%02X\n", index, c.memory[index])
+}
+
+func (c *chip8) MemoryDump(opcode uint16) {
+	log.Printf("=== MEMORY DUMP ===")
+	var i int16
+	for i = 0; i < 16; i++ {
+		log.Printf("Register V[%d]: %02X", i, c.V[i])
+	}
+	log.Printf("Register I: %04X", c.I)
+	log.Printf("Current opcode: %04X", opcode)
 }
 
 func (c *chip8) clearDisplay() {
@@ -87,6 +98,7 @@ func (c *chip8) Step() error {
 	opcode := c.FetchInstruction()
 	_, err := c.ExecuteOpcode(opcode)
 	if err != nil {
+		log.Printf("Exec opcode error: %s", err)
 		return err
 	}
 	return nil
@@ -106,6 +118,7 @@ func (c *chip8) FetchInstruction() uint16 {
 }
 
 func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
+	log.Printf("Executing %04X", op)
 	switch op & 0xF000 {
 	case 0x0000: // 0nnn
 		switch op {
@@ -364,8 +377,11 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 		i := uint16(0)
 
 		for j = 0; j < n; j++ {
+			//TODO: remove log
+			//log.Printf("Opcode: %04X loop: %d", op, j)
 			pixel := c.memory[c.I+j]
 			for i = 0; i < 8; i++ {
+				//log.Printf("Opcode: %04X inner loop: %d", op, i)
 				if (pixel & (0x80 >> i)) != 0 {
 					if c.display[(c.V[y] + uint8(j))][c.V[x]+uint8(i)] == 1 {
 						c.V[0xF] = 1
@@ -392,6 +408,7 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 			// Skip next instruction if key with the value of Vx is not pressed.
 			// Checks the keyboard, and if the key corresponding to the value of Vx
 			// is currently in the up position, PC is increased by 2.
+			log.Printf("V[%d]: %02X", x, c.V[x])
 			if c.keypad[c.V[x]] == 0 {
 				c.PC += 2
 			}
@@ -461,14 +478,26 @@ func (c *chip8) ExecuteOpcode(op uint16) (uint16, error) {
 
 			c.PC += 2
 			break
-		// Fx55 - LD [I], Vx
-		// Store registers V0 through Vx in memory starting at location I.
-		// The interpreter copies the values of registers V0 through Vx into
-		// memory, starting at the address in I.
-		// Fx65 - LD Vx, [I]
-		// Read registers V0 through Vx from memory starting at location I.
-		// The interpreter reads values from memory starting at location I into
-		// registers V0 through Vx.
+		case 0x55: // Fx55 - LD [I], Vx
+			// Store registers V0 through Vx in memory starting at location I.
+			// The interpreter copies the values of registers V0 through Vx into
+			// memory, starting at the address in I.
+			var i uint16
+			for i = 0; i <= x; i++ {
+				c.memory[c.I+i] = c.V[i]
+			}
+			c.PC += 2
+			break
+		case 0x65: // Fx65 - LD Vx, [I]
+			// Read registers V0 through Vx from memory starting at location I.
+			// The interpreter reads values from memory starting at location I into
+			// registers V0 through Vx.
+			var i uint16
+			for i = 0; i <= x; i++ {
+				c.V[i] = c.memory[c.I+i]
+			}
+			c.PC += 2
+			break
 		default:
 			return op, fmt.Errorf("Unknown opcode: 0x%04X", op)
 		}

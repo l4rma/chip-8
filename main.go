@@ -15,6 +15,8 @@ func main() {
 	}
 	chip8.LoadBytes(0x50, interpreter.FontSet)
 	chip8.LoadRom(game)
-	chip8.PrintMemory(0x50)
-	chip8.PrintMemory(0x9F)
+	err = chip8.Run()
+	if err != nil {
+		log.Fatal("|| Runtime error: %s", err)
+	}
 }
